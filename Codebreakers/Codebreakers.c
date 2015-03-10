@@ -19,17 +19,15 @@
 #include "timer.h"
 //#include "../usart.h"
 
-//--------Shared Variables---------------------------------
-//value of last input
-unsigned char lastInput;
-
 //--------Helper Functions---------------------------------
 //returns a series of characters, up to a certain length
 //custom is a bool to determine whether to use custom characters or not
 unsigned int length = 5;
 static char answerKey[5];
+unsigned int seedVar = 100;
 void getRandKey(int custom)
 {
+	srand(seedVar);
 	char allKeypad[15] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', '\0'};
 	//randomly generated key that both players must copy
 	int i = 0;
@@ -49,8 +47,10 @@ void getRandKey(int custom)
 
 //checks to see if a character is the correct one in the sequence
 unsigned int anspos = 0;
+//status of lights
 unsigned char lights = 0x00;
-const unsigned char win[] = {'Y', 'o', 'u', ' ', 'W', 'i', 'n', '!', '\0'};
+//win message
+const unsigned char win[] = {'P', 'l', 'a', 'y', 'e', 'r', ' ', 'O', 'n', 'e', ' ', 'W', 'i', 'n', 's', '\0'};
 void checkKey(char character)
 {
 	if (answerKey[anspos] == character) //correct
@@ -88,18 +88,29 @@ void checkKey(char character)
 //--------User defined FSMs--------------------------------
 unsigned char Flag;
 
-enum gameStates{gameStart, gameInit, gameWait, gameOut} gamestate;
+//number of rounds
+int rounds;
+int currentRound = 5;
+//whether game is running or not
+int playingNow = 0;
+enum gameStates{gameStart, gameMenu, gameWait, gameOut} gamestate;
 int gameManager(int state)
 {
 	unsigned char x;
-	
 	switch(gamestate)
 	{
 		case gameStart:
-			gamestate = gameInit;
+			gamestate = gameMenu;
 			break;
-		case gameInit:
-			gamestate = gameOut;
+		case gameMenu:
+			if(playingNow)
+			{
+				//init game
+				LCD_ClearScreen();
+				//generate random key
+				getRandKey(0);
+				gamestate = gameWait;
+			}
 			break;
 		case gameWait:
 			x = GetKeypadKey();
@@ -124,11 +135,11 @@ int gameManager(int state)
 		{
 			case gameStart:
 				break;
-			case gameInit:
-				//generate random key
-				getRandKey(0);
+			case gameMenu:
+				//do nothing during menu
 				break;
 			case gameWait:
+				//do nothing but wait for next input
 				break;
 			case gameOut:
 				LCD_ClearScreen();
@@ -136,7 +147,7 @@ int gameManager(int state)
 				x = GetKeypadKey();
 				switch (x) {
 					// All 5 LEDs on
-					case '\0': PORTB = 0x1F; break;
+					case '\0': break;
 					// hex equivalent
 					case '1': LCD_WriteData('1'); checkKey('1');
 					break;
@@ -170,8 +181,8 @@ int gameManager(int state)
 					break;
 					case '#': LCD_WriteData('#'); checkKey('#');
 				break;
-				// Should never occur. Middle LED off.
-				default: PORTB = 0x1B; break;
+				default:
+					break;
 			}
 			Flag = 1;
 			break;
@@ -181,16 +192,114 @@ int gameManager(int state)
 	return gamestate;
 }
 
-enum menusStates{menuStart, startscreen, gameconfigscreen, playscreen, back} menustate;
+unsigned char button1 = 0x00;
+const unsigned char config[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
+enum menusStates{menuStart, gameconfigscreenwait, playscreen, menuOut} menustate;
 int menus(int state)
 {
+	unsigned char x;
+	switch(menustate)
+	{
+		case menuStart:
+			LCD_DisplayString(1, config);
+			LCD_Cursor(17);
+			LCD_WriteData(5 + '0');
+			menustate = gameconfigscreenwait;
+			break;
+		case gameconfigscreenwait:
+			x = GetKeypadKey();
+			if(x == '\0')
+			{
+				menustate = gameconfigscreenwait;
+				Flag = 0;
+			}
+			else
+			{
+				menustate = menuOut;
+			}
+			break;
+		case playscreen:
+			if (!playingNow)
+			{
+				 menustate = menuStart;
+			}
+			break;
+		case menuOut:
+			menustate = gameconfigscreenwait;
+			break;
+	}
+	if (!Flag)
+	{
+		switch(menustate)
+		{
+			case menuStart:
+				break;
+			case gameconfigscreenwait:
+				break;
+			case playscreen:
+				break;
+			case menuOut:
+			//LCD_ClearScreen();
+			LCD_Cursor(17);
+			x = GetKeypadKey();
+			switch (x) {
+				case '\0': break;
+				case '*': //inc round numb
+				if (currentRound != 1) currentRound--; LCD_WriteData(currentRound + '0');
+				break;
+				case '0': //game is now starting
+				playingNow = 1;
+				LCD_ClearScreen();
+				menustate = playscreen;
+				break;
+				case '#': //dec round numb
+				if (currentRound != 9) currentRound++; LCD_WriteData(currentRound + '0');
+				break;
+				default:
+					break;
+			}
+		Flag = 1;
+		break;
+		}
+	}
 	return menustate;
+}
+
+enum seedStates{seedStart, seedUpdate} seedstate;
+int seed(int state)
+{
+	switch(seedstate)
+	{
+		case seedStart:
+		seedstate = seedUpdate;
+		break;
+		case seedUpdate:
+		break;
+	}
+	
+	switch(seedstate)
+	{
+		case seedStart:
+		break;
+		case seedUpdate:
+		if (seedVar <= 65530)
+		{
+			seedVar++;
+			
+		}
+		else
+		{
+			seedVar = 100;
+		}
+		break;
+	}
+	return seedstate;
 }
 
 // Implement scheduler code from PES.
 int main()
 {	
-	srand(100);
+	
 	// Set Data Direction Registers
 	// Buttons PORTA[0-7], set AVR PORTA
 	// to pull down logic
