@@ -25,6 +25,8 @@
 unsigned char Flag;
 //length of answer key
 static char answerKey[5];
+//length of distortion key;
+static char distortionKey[4];
 //seed for random number
 unsigned int seedVar = 100;
 
@@ -61,7 +63,6 @@ const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 
 //config message
 const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
 
-
 //--------Helper Functions---------------------------------
 //returns a series of characters, up to a certain length
 //custom is a bool to determine whether to use custom characters or not
@@ -74,7 +75,11 @@ void getRandKey(int custom)
 	int i = 0;
 	if (custom)
 	{
-		
+		for (i = 0; i < 4; ++i)
+		{
+			distortionKey[i] = customKeypad[rand() % 6];
+		}
+		distortionKey[i] = '\0';
 	}
 	else
 	{
@@ -85,6 +90,29 @@ void getRandKey(int custom)
 		}
 		answerKey[i] = '\0';
 	}
+}
+
+//runs at the end of each round
+void roundWon()
+{
+	//display win
+	LCD_DisplayString(1, winDisplay);
+	LCD_Cursor(23); LCD_WriteData(TROPHY);
+	LCD_Cursor(24); LCD_WriteData(TROPHY);
+	LCD_Cursor(25); LCD_WriteData(TROPHY);
+	sleep(500000);
+	LCD_ClearScreen();
+					
+	//reset lights
+	lights = 0x00;
+	PORTB = lights;
+	
+}
+
+//runs at the end of each game
+int endGame()
+{
+	return 1;
 }
 
 //checks answer key for correct button press
@@ -113,27 +141,19 @@ int checkKey(char character)
 				PORTB = lights;
 				anspos = 0;
 				
-				//display win
-				LCD_DisplayString(1, winDisplay);
-				LCD_Cursor(23); LCD_WriteData(TROPHY);
-				LCD_Cursor(24); LCD_WriteData(TROPHY);
-				LCD_Cursor(25); LCD_WriteData(TROPHY);
-				sleep(500000);
-				LCD_ClearScreen();
-				
-				//reset lights
-				lights = 0x00;
-				PORTB = lights;
+				roundWon();
 				
 				//inc round
 				rounds++;
 				//if round number is 0, go back to gameconfig
 				if (rounds == currentRound + 1)
 				{
-					status = 1;
+					status = endGame();
 				}
 				else
 				{
+					//get new distortion key
+					getRandKey(1);
 					//display round
 					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
@@ -187,8 +207,9 @@ int gameManager(int state)
 			{
 				//init game
 				LCD_ClearScreen();
-				//generate random key
+				//generate random key and distortion key
 				getRandKey(0);
+				getRandKey(1);
 				//init starting round
 				rounds = 1;
 				gamestate = gameWait;
@@ -205,6 +226,11 @@ int gameManager(int state)
 			if(!playingNow) gamestate = gameMenu;
 			else
 			{
+				//display distortion
+				LCD_Cursor(17); LCD_WriteData(distortionKey[0]);
+				LCD_Cursor(18); LCD_WriteData(distortionKey[1]);
+				LCD_Cursor(19); LCD_WriteData(distortionKey[2]);
+				LCD_Cursor(20); LCD_WriteData(distortionKey[3]);
 				x = GetKeypadKey();
 				if(x == '\0')
 				{
@@ -235,7 +261,7 @@ int gameManager(int state)
 				//do nothing but wait for next input
 				break;
 			case gameOut:
-				LCD_ClearScreen();
+				//LCD_ClearScreen();
 				LCD_Cursor(1);
 				x = GetKeypadKey();
 				switch (x) {
@@ -386,7 +412,6 @@ int seeder(int state)
 	return seedstate;
 }
 
-// Implement scheduler code from PES.
 int main()
 {	
 	// Set Data Direction Registers
