@@ -5,8 +5,6 @@
  *  Author: Rica Feng
  */ 
 
-#define F_CPU 8000000
-
 #include <avr/io.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,25 +17,59 @@
 #include "scheduler.h"
 #include "stack.h"
 #include "timer.h"
-//#include "wiringatmega32.h"
+#include "../customchar.h"
 //#include "../usart.h"
 
+//--------Global Variables---------------------------------
+//for button presses
+unsigned char Flag;
+//length of answer key
+static char answerKey[5];
+//seed for random number
+unsigned int seedVar = 100;
+
+//checks to see if a character is the correct one in the sequence
+unsigned int anspos = 0;
+//status of lights
+unsigned char lights = 0x00;
+
+//number of rounds
+int rounds;
+int currentRound = 5;
+
+//whether game is running or not
+int playingNow = 0;
+
+//MACROS for custom char
+#define SMALLBLOCK 0
+#define LARGEBLOCK 1
+#define TROPHY 2
+#define DIS_ONE 3
+#define DIS_TWO 4
+#define DIS_THREE 5
+#define DIS_FOUR 6
+#define DIS_FIVE 7
+#define DIS_SIX 8
+
+//--------Display Strings---------------------------------
+//display round number
+const unsigned char roundDisplay[] = {'R', 'o', 'u', 'n', 'd', '\0'};
+//win message
+const unsigned char winDisplay[] = {'P', 'l', 'a', 'y', 'e', 'r', ' ', 'O', 'n', 'e', ' ', 'W', 'i', 'n', 's', '\0'};
+//start message
+const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
+//config message
+const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
+
+
 //--------Helper Functions---------------------------------
-/*
-byte codeBracket[8] = {
-	0x6,0xc,0x18,0x10,0x18,0xc,0x6
-};*/
-
-
 //returns a series of characters, up to a certain length
 //custom is a bool to determine whether to use custom characters or not
-unsigned int length = 5;
-static char answerKey[5];
-unsigned int seedVar = 100;
 void getRandKey(int custom)
 {
 	srand(seedVar);
-	char allKeypad[15] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', '\0'};
+	char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', '\0'};
+	char customKeypad[] = {DIS_ONE, DIS_TWO, DIS_THREE, DIS_FOUR, DIS_FIVE, DIS_SIX};
 	//randomly generated key that both players must copy
 	int i = 0;
 	if (custom)
@@ -46,7 +78,7 @@ void getRandKey(int custom)
 	}
 	else
 	{
-		for (i = 0; i < length; ++i)
+		for (i = 0; i < 5; ++i)
 		{
 			//answerKey[i] = allKeypad[rand() % 14];
 			answerKey[i] = allKeypad[1];
@@ -55,16 +87,7 @@ void getRandKey(int custom)
 	}
 }
 
-//number of rounds
-int rounds;
-int currentRound = 5;
-const unsigned char rounddisplay[] = {'R', 'o', 'u', 'n', 'd', '\0'};
-//checks to see if a character is the correct one in the sequence
-unsigned int anspos = 0;
-//status of lights
-unsigned char lights = 0x00;
-//win message
-const unsigned char win[] = {'P', 'l', 'a', 'y', 'e', 'r', ' ', 'O', 'n', 'e', ' ', 'W', 'i', 'n', 's', '\0'};
+//checks answer key for correct button press
 int checkKey(char character)
 {
 	int status = 0;
@@ -87,37 +110,35 @@ int checkKey(char character)
 				break;
 			case 5:
 				lights = 0xFF;
+				PORTB = lights;
 				anspos = 0;
 				
 				//display win
-				LCD_DisplayString(1, win);
-				unsigned long count = 500000;
-				while (count >= 1)
-				{
-					count--;
-				}
+				LCD_DisplayString(1, winDisplay);
+				LCD_Cursor(23); LCD_WriteData(TROPHY);
+				LCD_Cursor(24); LCD_WriteData(TROPHY);
+				LCD_Cursor(25); LCD_WriteData(TROPHY);
+				sleep(500000);
 				LCD_ClearScreen();
+				
+				//reset lights
+				lights = 0x00;
+				PORTB = lights;
 				
 				//inc round
 				rounds++;
 				//if round number is 0, go back to gameconfig
 				if (rounds == currentRound + 1)
 				{
-					lights = 0x00;
-					PORTB = lights;
 					status = 1;
 				}
 				else
 				{
 					//display round
-					LCD_DisplayString(1, rounddisplay);
+					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
 					LCD_WriteData(rounds + '0');
-					count = 500000;
-					while (count >= 1)
-					{
-						count--;
-					}
+					sleep(500000);
 					LCD_ClearScreen();
 				}
 				break;
@@ -134,14 +155,16 @@ int checkKey(char character)
 	return status;
 }
 
+//sleeps for some time
+void sleep(unsigned long x)
+{
+	while (x > 0)
+	{
+		x--;
+	}
+}
+
 //--------User defined FSMs--------------------------------
-unsigned char Flag;
-
-
-const unsigned char opening[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', '\0'};
-const unsigned char signature[] = {'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
-//whether game is running or not
-int playingNow = 0;
 enum gameStates{gameStart, gameMenu, gameWait, gameOut} gamestate;
 int gameManager(int state)
 {
@@ -149,15 +172,15 @@ int gameManager(int state)
 	switch(gamestate)
 	{
 		case gameStart:
-			LCD_DisplayString(1, opening);
-			//LCD_DisplayString(17, signature);
-			unsigned long count = 1000000;
-			gamestate = gameMenu;
-			while (count >= 1)
-			{
-				count--;
-			}
+			initCustomChar();
+			LCD_DisplayString(3, openingDisplay);
+			LCD_Cursor(1); LCD_WriteData(SMALLBLOCK);
+			LCD_Cursor(2); LCD_WriteData(LARGEBLOCK);
+			LCD_Cursor(16); LCD_WriteData(SMALLBLOCK);
+			LCD_Cursor(15); LCD_WriteData(LARGEBLOCK);
+			sleep(1000000);
 			LCD_ClearScreen();
+			gamestate = gameMenu;
 			break;
 		case gameMenu:
 			if(playingNow)
@@ -171,14 +194,9 @@ int gameManager(int state)
 				gamestate = gameWait;
 				
 				//display round number
-				LCD_DisplayString(1, rounddisplay);
-				LCD_Cursor(7);
-				LCD_WriteData(rounds + '0');
-				unsigned long count = 500000;
-				while (count >= 1)
-				{
-					count--;
-				}
+				LCD_DisplayString(1, roundDisplay);
+				LCD_Cursor(7); LCD_WriteData(rounds + '0');
+				sleep(500000);
 				LCD_ClearScreen();
 			}
 			break;
@@ -267,7 +285,6 @@ int gameManager(int state)
 	return gamestate;
 }
 
-const unsigned char config[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
 enum menusStates{menuStart, gameconfigscreenwait, playscreen, menuOut} menustate;
 int menus(int state)
 {
@@ -275,7 +292,7 @@ int menus(int state)
 	switch(menustate)
 	{
 		case menuStart:
-			LCD_DisplayString(1, config);
+			LCD_DisplayString(1, configDisplay);
 			LCD_Cursor(17);
 			LCD_WriteData(currentRound + '0');
 			menustate = gameconfigscreenwait;
@@ -323,7 +340,7 @@ int menus(int state)
 				break;
 				case '0': //game is now starting
 				playingNow = 1;
-				LCD_ClearScreen();
+				//LCD_ClearScreen();
 				menustate = playscreen;
 				break;
 				case '#': //dec round numb
