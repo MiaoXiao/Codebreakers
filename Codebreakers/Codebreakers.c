@@ -25,7 +25,7 @@ unsigned char Flag;
 //length of answer key
 static char answerKey[5];
 //length of distortion key;
-static char distortionKey[4];
+static char disruptionKey[4];
 //seed for random number
 unsigned int seedVar = 100;
 
@@ -49,6 +49,10 @@ unsigned int minutes = 0;
 int timeStarting = 0;
 #define TIMETRACK 39
 int timeTrack = TIMETRACK;
+//change disruption string at this second
+int disruption_second = 5;
+//whether disruption string has been changed or not
+int disruption_changed = 0;
 
 //MACROS for custom char
 #define BLOCK 0
@@ -66,16 +70,17 @@ int codepos = 0;
 char playeronePower[] = {' ', ' ', ' ', '\0'};
 int playeroneNumbPowerUp = 0;
 
+unsigned char customKeypad[] = {DIS_ONE, DIS_TWO, DIS_THREE, DIS_FOUR, DIS_FIVE, DIS_SIX};
+
 //--------Display Strings---------------------------------
 //display round number
 const unsigned char roundDisplay[] = {'R', 'o', 'u', 'n', 'd', '\0'};
 //win message
-const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'A', 'n', 's', 'w', 'e', 'r', ':', '\0'};
+const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'C', 'o', 'd', 'e', ':', '\0'};
 //start message
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
 const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
-
 
 //--------Helper Functions---------------------------------
 //sleeps for some time
@@ -85,6 +90,48 @@ void sleep(unsigned long x)
 	{
 		x--;
 	}
+}
+
+//get next second to change disruption again
+void setNewDisruptionTime()
+{
+	disruption_changed = 0;
+	srand(seedVar);
+	int newDisruptionSec = disruption_second + (rand() % (50 - 5)) + 5;
+	if (newDisruptionSec > 59)
+	{
+		newDisruptionSec = newDisruptionSec - 59;
+	}
+	disruption_second = newDisruptionSec;
+}
+
+//slightly change disruption key
+void changeDisruption()
+{
+	disruption_changed = 1;
+	
+	srand(seedVar);
+	int randPos = rand() % 4;
+	int randDisruptionChar = rand() % 6;
+	
+	//make sure to change char to a different one
+	if (disruptionKey[randPos] != customKeypad[randDisruptionChar])
+	{
+		disruptionKey[randPos] = customKeypad[randDisruptionChar];
+	}
+	else
+	{
+		if (customKeypad[randDisruptionChar + 1] != '\0')
+		{
+			disruptionKey[randPos] = customKeypad[randDisruptionChar + 1];
+		}
+		else
+		{
+			disruptionKey[randPos] = customKeypad[randDisruptionChar - 1];
+		}
+	}
+	
+	
 }
 
 //display all custom characters (debug)
@@ -107,16 +154,15 @@ void getRandKey(int custom)
 {
 	srand(seedVar);
 	char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
-	char customKeypad[] = {DIS_ONE, DIS_TWO, DIS_THREE, DIS_FOUR, DIS_FIVE, DIS_SIX};
 	//randomly generated key that both players must copy
 	int i = 0;
 	if (custom)
 	{
 		for (i = 0; i < 4; ++i)
 		{
-			distortionKey[i] = customKeypad[rand() % 6];
+			disruptionKey[i] = customKeypad[rand() % 6];
 		}
-		distortionKey[i] = '\0';
+		disruptionKey[i] = '\0';
 	}
 	else
 	{
@@ -155,39 +201,6 @@ void getPowerup()
 	}
 }
 
-//runs at the end of each round
-void roundWon()
-{
-	//display win
-	LCD_DisplayString(1, winDisplay);
-	LCD_Cursor(16); LCD_WriteData(TROPHY);
-	//display correct code
-	LCD_Cursor(24); LCD_WriteData(answerKey[0]);
-	LCD_Cursor(25); LCD_WriteData(answerKey[1]);
-	LCD_Cursor(26); LCD_WriteData(answerKey[2]);
-	LCD_Cursor(27); LCD_WriteData(answerKey[3]);
-	LCD_Cursor(28); LCD_WriteData(answerKey[4]);
-	sleep(2000000);
-	LCD_ClearScreen();
-					
-	//reset lights
-	lights = 0x00;
-	PORTB = lights;
-	
-	//reset ans pos
-	anspos = 0;
-	//reset all powerups
-	playeroneNumbPowerUp = 0;
-	playeronePower[0] = ' ';
-	playeronePower[1] = ' ';
-	playeronePower[2] = ' ';
-	
-	
-	
-	//inc round
-	rounds++;
-}
-
 //runs at the end of each game
 int endGame()
 {
@@ -199,10 +212,10 @@ int endGame()
 void displayDistortion()
 {
 	//LCD_Cursor(17); LCD_WriteData(BRACKET);
-	LCD_Cursor(17); LCD_WriteData(distortionKey[0]);
-	LCD_Cursor(18); LCD_WriteData(distortionKey[1]);
-	LCD_Cursor(19); LCD_WriteData(distortionKey[2]);
-	LCD_Cursor(20); LCD_WriteData(distortionKey[3]);
+	LCD_Cursor(17); LCD_WriteData(disruptionKey[0]);
+	LCD_Cursor(18); LCD_WriteData(disruptionKey[1]);
+	LCD_Cursor(19); LCD_WriteData(disruptionKey[2]);
+	LCD_Cursor(20); LCD_WriteData(disruptionKey[3]);
 }
 
 //opening screen
@@ -219,6 +232,40 @@ void opening()
 	sleep(1000000);
 	LCD_ClearScreen();
 }
+
+//init all these things each new round
+void newRound()
+{	
+	setNewDisruptionTime();
+	//reset lights
+	lights = 0x00;
+	PORTB = lights;
+	
+	//reset ans pos
+	anspos = 0;
+	//reset all powerups
+	playeroneNumbPowerUp = 0;
+	playeronePower[0] = ' ';
+	playeronePower[1] = ' ';
+	playeronePower[2] = ' ';
+	
+	//inc round
+	rounds++;
+	
+	//get new distortion key
+	getRandKey(1);
+	//get new puzzle
+	getRandKey(0);
+						
+	//reset time
+	minutes = 0;
+	seconds_ones = -1;
+	seconds_tens = 0;
+	timeTrack = TIMETRACK;
+						
+	getPowerup();
+}
+
 
 //checks answer key for correct button press
 int checkKey(char character)
@@ -246,9 +293,20 @@ int checkKey(char character)
 			case 5:
 				lights = 0xFF;
 				PORTB = lights;
-
-				roundWon();
-
+				
+				//display win
+				LCD_DisplayString(1, winDisplay);
+				LCD_Cursor(16); LCD_WriteData(TROPHY);
+				//display correct code
+				LCD_Cursor(22); LCD_WriteData(answerKey[0]);
+				LCD_Cursor(23); LCD_WriteData(answerKey[1]);
+				LCD_Cursor(24); LCD_WriteData(answerKey[2]);
+				LCD_Cursor(25); LCD_WriteData(answerKey[3]);
+				LCD_Cursor(26); LCD_WriteData(answerKey[4]);
+				sleep(2000000);
+				LCD_ClearScreen();
+				
+				newRound();
 				//if round number is 0, go back to gameconfig
 				if (rounds == currentRound + 1)
 				{
@@ -256,24 +314,13 @@ int checkKey(char character)
 				}
 				else
 				{
-					//get new distortion key
-					getRandKey(1);
-					//display round
+					//display next round
 					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
 					LCD_WriteData(rounds + '0');
 					sleep(1000000);
 					LCD_ClearScreen();
-					
-					//reset time
-					minutes = 0;
-					seconds_ones = -1;
-					seconds_tens = 0;
-					timeTrack = TIMETRACK;
-					
-					getPowerup();
 				}
-				
 				break;
 				
 		}
@@ -294,7 +341,18 @@ void checkCode()
 	int newpos = 0;
 	if (playeroneNumbPowerUp != 3 && code[0] == '*' && code[1] == '*') //tap in to try to get powerup
 	{
-		getPowerup();
+		//reset pos
+		anspos = 0;
+		if (disruption_changed) //right!
+		{
+			getPowerup();
+			setNewDisruptionTime();
+		}
+		else //wrong!
+		{
+			LCD_Cursor(7); LCD_WriteData('W');
+		}
+		
 	}
 	else if (code[0] == '#' && playeroneNumbPowerUp != 0) //use a powerup that you have
 	{	
@@ -332,6 +390,7 @@ int gameManager(int state)
 	switch(gamestate)
 	{
 		case gameStart:
+			LCD_ClearScreen();
 			opening();
 			gamestate = gameMenu;
 			break;
@@ -340,22 +399,22 @@ int gameManager(int state)
 			{
 				//init game
 				LCD_ClearScreen();
-				//generate random key and distortion key
-				getRandKey(0);
-				getRandKey(1);
 				//init starting round
 				rounds = 1;
-				gamestate = gameWait;
 				
-				//display round number
+				//display next round
 				LCD_DisplayString(1, roundDisplay);
-				LCD_Cursor(7); LCD_WriteData(rounds + '0');
+				LCD_Cursor(7);
+				LCD_WriteData(rounds + '0');
 				sleep(1000000);
 				LCD_ClearScreen();
+				
+				rounds = 0;
+				newRound();
+				
 				//enable time
 				timeStarting = 1;
-				
-				getPowerup();
+				gamestate = gameWait;
 			}
 			break;
 		case gameWait:
@@ -598,6 +657,12 @@ int timer(int state)
 		case timeTick:
 		if (timeTrack == TIMETRACK)
 		{
+			//check if it is time to change disruption string
+			if ((seconds_ones + (seconds_tens * 10)) == disruption_second)
+			{
+				changeDisruption();
+			}
+			
 			timeTrack = 0;
 			seconds_ones++;
 			if (seconds_ones == 10)
@@ -635,20 +700,88 @@ int timer(int state)
 	return timestate;
 }
 
-/*
-enum resetStates{resetStart, reset} resetstate;
+unsigned char resetCode[] = {'#', '#', '#', '#', '#', '0', '4', '1', '5', '\0'};
+int resetpos = 0;
+enum resetStates{resetStart, resetWait, actualReset, resetOut} resetstate;
 int hardReset(int state)
 {
+	unsigned char x;
 	switch(resetstate)
 	{
-		
+		case resetStart:
+		resetpos = 0;
+		resetstate = resetWait;
+		break;
+		case resetWait:
+			x = GetKeypadKey();
+			if (resetCode[resetpos] == '\0')
+			{
+				resetstate = actualReset;
+			}
+			else if (x == '\0')
+			{
+				resetstate = resetWait;
+				Flag = 0;
+			}
+			else
+			{
+				resetstate = resetOut;
+			}
+			break;
+		case actualReset:
+		resetstate = resetStart;
+		break;
+		case resetOut:
+		resetstate = resetWait;
+		break;
+
 	}
-	switch(resetstate)
+	if (!Flag)
 	{
-		
+		switch(resetstate)
+		{
+			case resetStart:
+			break;
+			case resetWait:
+			break;
+			case actualReset: //reset game
+			playingNow = 0;
+			gamestate = gameStart;
+			LCD_Cursor(1); LCD_WriteData('Y');
+			break;
+			case resetOut:
+			x = GetKeypadKey();
+			switch (x) {
+				case '\0': resetpos = 0; break;
+				case '0':
+				if (resetpos == 5) resetpos++;
+				else resetpos = 0;
+				break;
+				case '1':
+				if (resetpos == 7) resetpos++;
+				else resetpos = 0;
+				break;
+				case '4':
+				if (resetpos == 6) resetpos++;
+				else resetpos = 0;
+				break;
+				case '5':
+				if (resetpos == 8) resetpos++;
+				else resetpos = 0;
+				break;
+				case '#':
+				if (resetpos < 5) resetpos++;
+				else resetpos = 0;
+				break;
+				default:
+				break;
+			}
+			Flag = 1;
+			break;
+		}
 	}
 	return resetstate;
-}*/
+}
 
 /*
 enum timeStates{timeStart, timeTick, timeRestart} timestate;
@@ -684,10 +817,11 @@ int main()
 	unsigned long int menus_period = 1;
 	unsigned long int seeder_period = 20;
 	unsigned long int time_period = 1;
+	unsigned long int hardReset_period = 1;
 	
 	//Declare an array of tasks
-	static task task1, task2, task3, task4;
-	task *tasks[] = {&task1, &task2, &task3, &task4};
+	static task task1, task2, task3, task4, task5;
+	task *tasks[] = {&task1, &task2, &task3, &task4, &task5};
 	const unsigned short numTasks = sizeof(tasks) / sizeof(task*);
 	
 	// Task 1
@@ -713,6 +847,12 @@ int main()
 	task4.period = time_period;
 	task4.elapsedTime = time_period;
 	task4.TickFct = &timer;
+	
+	//Task 5
+	task5.state = resetStart;
+	task5.period = hardReset_period;
+	task5.elapsedTime = hardReset_period;
+	task5.TickFct = &hardReset;
 	
 	// Set the timer and turn it on
 	TimerSet(1);

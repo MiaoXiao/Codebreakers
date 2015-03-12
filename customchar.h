@@ -27,14 +27,14 @@ void createTrophy()
 
 void createDisruption_One()
 {
-	LCD_WriteData(0x18);
-	LCD_WriteData(0x18);
-	LCD_WriteData(0x3);
-	LCD_WriteData(0x3);
-	LCD_WriteData(0x18);
-	LCD_WriteData(0x18);
-	LCD_WriteData(0x3);
-	LCD_WriteData(0x3);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0xc);
+	LCD_WriteData(0xc);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x6);
+	LCD_WriteData(0x6);
+	LCD_WriteData(0x0);
 }
 
 void createDisruption_Two()
@@ -51,49 +51,49 @@ void createDisruption_Two()
 
 void createDisruption_Three()
 {
-	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0xa);
-	LCD_WriteData(0x11);
-	LCD_WriteData(0x11);
-	LCD_WriteData(0xa);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0x0);
 }
 
 void createDisruption_Four()
 {
 	LCD_WriteData(0x0);
-	LCD_WriteData(0xa);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
-	LCD_WriteData(0xa);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
 	LCD_WriteData(0x0);
 }
 
 void createDisruption_Five()
 {
 	LCD_WriteData(0x0);
-	LCD_WriteData(0xe);
-	LCD_WriteData(0x8);
-	LCD_WriteData(0x4);
 	LCD_WriteData(0x2);
+	LCD_WriteData(0x6);
 	LCD_WriteData(0xe);
-	LCD_WriteData(0x4);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0x6);
+	LCD_WriteData(0x2);
 	LCD_WriteData(0x0);
 }
 
 void createDisruption_Six()
 {
 	LCD_WriteData(0x0);
-	LCD_WriteData(0xa);
-	LCD_WriteData(0x2);
-	LCD_WriteData(0xe);
 	LCD_WriteData(0x8);
-	LCD_WriteData(0xa);
-	LCD_WriteData(0xa);
+	LCD_WriteData(0xc);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xe);
+	LCD_WriteData(0xc);
+	LCD_WriteData(0x8);
 	LCD_WriteData(0x0);
 }
 
