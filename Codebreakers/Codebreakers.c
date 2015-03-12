@@ -53,23 +53,29 @@ int timeTrack = TIMETRACK;
 //MACROS for custom char
 #define BLOCK 0
 #define TROPHY 1
-#define BRACKET 2
-#define DIS_ONE 3
-#define DIS_TWO 4
-#define DIS_THREE 5
-#define DIS_FOUR 6
-#define DIS_FIVE 7
-#define DIS_SIX 8
+#define DIS_ONE 2
+#define DIS_TWO 3
+#define DIS_THREE 4
+#define DIS_FOUR 5
+#define DIS_FIVE 6
+#define DIS_SIX 7
+
+//holds possible code
+char code[] = {' ', ' ', '\0'};
+int codepos = 0;
+char playeronePower[] = {' ', ' ', ' ', '\0'};
+int playeroneNumbPowerUp = 0;
 
 //--------Display Strings---------------------------------
 //display round number
 const unsigned char roundDisplay[] = {'R', 'o', 'u', 'n', 'd', '\0'};
 //win message
-const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', '\0'};
+const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'A', 'n', 's', 'w', 'e', 'r', ':', '\0'};
 //start message
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
 const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
+
 
 //--------Helper Functions---------------------------------
 //sleeps for some time
@@ -100,7 +106,7 @@ void debugAllCustoms()
 void getRandKey(int custom)
 {
 	srand(seedVar);
-	char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', '\0'};
+	char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
 	char customKeypad[] = {DIS_ONE, DIS_TWO, DIS_THREE, DIS_FOUR, DIS_FIVE, DIS_SIX};
 	//randomly generated key that both players must copy
 	int i = 0;
@@ -116,10 +122,36 @@ void getRandKey(int custom)
 	{
 		for (i = 0; i < 5; ++i)
 		{
-			//answerKey[i] = allKeypad[rand() % 14];
+			//answerKey[i] = allKeypad[rand() % 10];
 			answerKey[i] = allKeypad[1];
 		}
 		answerKey[i] = '\0';
+	}
+}
+
+//get a powerup
+void getPowerup()
+{
+	char allPowerUps[] = {'A', 'B', 'C', 'D', '\0'};
+	int newpos = 0;
+	srand(seedVar);
+	//get random powerup
+	char powerup = allPowerUps[rand() % 4];
+	//find next open space for powerup
+	while (newpos <= 2)
+	{
+		if (playeronePower[newpos] == ' ')
+		{
+			//get powerup
+			playeronePower[newpos] = powerup;
+			//update screen (add new powerup)
+			LCD_Cursor(14 + newpos); LCD_WriteData(powerup);
+			//increase powerup count
+			playeroneNumbPowerUp++;
+			//exit loop
+			newpos = 2;
+		}
+		newpos++;
 	}
 }
 
@@ -128,16 +160,32 @@ void roundWon()
 {
 	//display win
 	LCD_DisplayString(1, winDisplay);
-	LCD_Cursor(23); LCD_WriteData(TROPHY);
-	LCD_Cursor(24); LCD_WriteData(TROPHY);
-	LCD_Cursor(25); LCD_WriteData(TROPHY);
-	sleep(500000);
+	LCD_Cursor(16); LCD_WriteData(TROPHY);
+	//display correct code
+	LCD_Cursor(24); LCD_WriteData(answerKey[0]);
+	LCD_Cursor(25); LCD_WriteData(answerKey[1]);
+	LCD_Cursor(26); LCD_WriteData(answerKey[2]);
+	LCD_Cursor(27); LCD_WriteData(answerKey[3]);
+	LCD_Cursor(28); LCD_WriteData(answerKey[4]);
+	sleep(2000000);
 	LCD_ClearScreen();
 					
 	//reset lights
 	lights = 0x00;
 	PORTB = lights;
 	
+	//reset ans pos
+	anspos = 0;
+	//reset all powerups
+	playeroneNumbPowerUp = 0;
+	playeronePower[0] = ' ';
+	playeronePower[1] = ' ';
+	playeronePower[2] = ' ';
+	
+	
+	
+	//inc round
+	rounds++;
 }
 
 //runs at the end of each game
@@ -175,6 +223,8 @@ void opening()
 //checks answer key for correct button press
 int checkKey(char character)
 {
+	//reset code
+	codepos = 0;
 	int status = 0;
 	if (answerKey[anspos] == character) //correct
 	{
@@ -196,12 +246,9 @@ int checkKey(char character)
 			case 5:
 				lights = 0xFF;
 				PORTB = lights;
-				anspos = 0;
-			
+
 				roundWon();
-				
-				//inc round
-				rounds++;
+
 				//if round number is 0, go back to gameconfig
 				if (rounds == currentRound + 1)
 				{
@@ -215,7 +262,7 @@ int checkKey(char character)
 					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
 					LCD_WriteData(rounds + '0');
-					sleep(500000);
+					sleep(1000000);
 					LCD_ClearScreen();
 					
 					//reset time
@@ -223,7 +270,10 @@ int checkKey(char character)
 					seconds_ones = -1;
 					seconds_tens = 0;
 					timeTrack = TIMETRACK;
+					
+					getPowerup();
 				}
+				
 				break;
 				
 		}
@@ -236,6 +286,41 @@ int checkKey(char character)
 
 	PORTB = lights;
 	return status;
+}
+
+//checks to see if a valid code, runs corresponding powerup if required
+void checkCode()
+{
+	int newpos = 0;
+	if (playeroneNumbPowerUp != 3 && code[0] == '*' && code[1] == '*') //tap in to try to get powerup
+	{
+		getPowerup();
+	}
+	else if (code[0] == '#' && playeroneNumbPowerUp != 0) //use a powerup that you have
+	{	
+		while (newpos <= 2) //loop through powerup array and find powerup
+		{
+			if (playeronePower[newpos] == code[1]) //if this is the right code, use the corresponding powerup
+			{
+				//remove powerup
+				playeronePower[newpos] = ' ';
+				//actually run the powerup
+				if (code[1] == 'A'){} //Attack: freeze other player's screen for 2 seconds
+				else if (code[1] == 'B'){} //Bug: reverse other player's controls for 4 seconds
+				else if (code[1] == 'C'){} 
+				else if (code[1] == 'D') {} //Disrupt: other player's code is reset
+				//update screen (remove powerup)
+				LCD_Cursor(14 + newpos); LCD_WriteData(' ');
+				//remove number of powerups
+				playeroneNumbPowerUp--;
+				//exit loop
+				newpos = 2;
+			}
+			newpos++;
+		}
+
+	}
+	
 }
 
 //--------User defined FSMs--------------------------------
@@ -265,10 +350,12 @@ int gameManager(int state)
 				//display round number
 				LCD_DisplayString(1, roundDisplay);
 				LCD_Cursor(7); LCD_WriteData(rounds + '0');
-				sleep(500000);
+				sleep(1000000);
 				LCD_ClearScreen();
 				//enable time
 				timeStarting = 1;
+				
+				getPowerup();
 			}
 			break;
 		case gameWait:
@@ -311,44 +398,66 @@ int gameManager(int state)
 				//LCD_ClearScreen();
 				LCD_Cursor(1);
 				x = GetKeypadKey();
+				char lastEntered = '\0';
+				char codeEntered = '\0';
 				switch (x) {
 					// All 5 LEDs on
 					case '\0': break;
 					// hex equivalent
-					case '1': LCD_WriteData('1'); if(checkKey('1')) playingNow = 0;
+					case '1': LCD_WriteData('1'); lastEntered = '1';
 					break;
-					case '2': LCD_WriteData('2'); if(checkKey('2')) playingNow = 0;
+					case '2': LCD_WriteData('2'); lastEntered = '2';
 					break;
-					case '3': LCD_WriteData('3'); if(checkKey('3')) playingNow = 0;
+					case '3': LCD_WriteData('3'); lastEntered = '3';
 					break;
-					case '4': LCD_WriteData('4'); if(checkKey('4')) playingNow = 0;
+					case '4': LCD_WriteData('4'); lastEntered = '4';
 					break;
-					case '5': LCD_WriteData('5'); if(checkKey('5')) playingNow = 0;
+					case '5': LCD_WriteData('5'); lastEntered = '5';
 					break;
-					case '6': LCD_WriteData('6'); if(checkKey('6')) playingNow = 0;
+					case '6': LCD_WriteData('6'); lastEntered = '6';
 					break;
-					case '7': LCD_WriteData('7'); if(checkKey('7')) playingNow = 0;
+					case '7': LCD_WriteData('7'); lastEntered = '7';
 					break;
-					case '8': LCD_WriteData('8'); if(checkKey('8')) playingNow = 0;
+					case '8': LCD_WriteData('8'); lastEntered = '8';
 					break;
-					case '9': LCD_WriteData('9'); if(checkKey('9')) playingNow = 0;
+					case '9': LCD_WriteData('9'); lastEntered = '9';
 					break;
-					case 'A': LCD_WriteData('A'); if(checkKey('A')) playingNow = 0;
+					case 'A': LCD_WriteData('A'); codeEntered = 'A';
 					break;
-					case 'B': LCD_WriteData('B'); if(checkKey('B')) playingNow = 0;
+					case 'B': LCD_WriteData('B'); codeEntered = 'B';
 					break;
-					case 'C': LCD_WriteData('C'); if(checkKey('C')) playingNow = 0;
+					case 'C': LCD_WriteData('C'); codeEntered = 'C';
 					break;
-					case 'D': LCD_WriteData('D'); if(checkKey('D')) playingNow = 0;
+					case 'D': LCD_WriteData('D'); codeEntered = 'D';
 					break;
-					case '*': LCD_WriteData('*'); checkKey('*');
+					case '*': LCD_WriteData('*'); codeEntered = '*';
 					break;
-					case '0': LCD_WriteData('0'); if(checkKey('0')) playingNow = 0;
+					case '0': LCD_WriteData('0'); lastEntered = '0';
 					break;
-					case '#': LCD_WriteData('#'); checkKey('#');
+					case '#': LCD_WriteData('#'); codeEntered = '#';
 				break;
 				default:
 					break;
+			}
+			//check if last entered if part of the combo
+			if(lastEntered != '\0' && checkKey(lastEntered))
+			{
+				playingNow = 0;
+			}
+			//check user code
+			else if (codeEntered != '\0')
+			{
+				if (codeEntered == '#') codepos = 0;
+				else if (codeEntered == '*' && code[0] != '*') codepos = 0;
+				//save last code
+				code[codepos] = codeEntered;
+				codepos++;
+				if (codepos == 2)
+				{
+					checkCode();
+					codepos = 0;
+				}					
+				
 			}
 			Flag = 1;
 			break;
@@ -525,6 +634,21 @@ int timer(int state)
 	}
 	return timestate;
 }
+
+/*
+enum resetStates{resetStart, reset} resetstate;
+int hardReset(int state)
+{
+	switch(resetstate)
+	{
+		
+	}
+	switch(resetstate)
+	{
+		
+	}
+	return resetstate;
+}*/
 
 /*
 enum timeStates{timeStart, timeTick, timeRestart} timestate;

@@ -115,7 +115,7 @@ void initCustomChar()
 	LCD_WriteCommand(0x40);
 	createBlock();
 	createTrophy();
-	createBracket();
+	//createBracket();
 	createDisruption_One();
 	createDisruption_Two();
 	createDisruption_Three();
