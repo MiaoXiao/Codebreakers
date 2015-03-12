@@ -12,7 +12,6 @@
 #include "io.c"
 #include "io.h"
 #include "keypad.h"
-//#include "lcd_8bit_task.h"
 #include "queue.h"
 #include "scheduler.h"
 #include "stack.h"
@@ -42,10 +41,19 @@ int currentRound = 5;
 //whether game is running or not
 int playingNow = 0;
 
+//time managing
+unsigned int seconds_ones = -1;
+unsigned int seconds_tens = 0;
+unsigned int minutes = 0;
+//whether time should start ticking
+int timeStarting = 0;
+#define TIMETRACK 39
+int timeTrack = TIMETRACK;
+
 //MACROS for custom char
-#define SMALLBLOCK 0
-#define LARGEBLOCK 1
-#define TROPHY 2
+#define BLOCK 0
+#define TROPHY 1
+#define BRACKET 2
 #define DIS_ONE 3
 #define DIS_TWO 4
 #define DIS_THREE 5
@@ -57,13 +65,36 @@ int playingNow = 0;
 //display round number
 const unsigned char roundDisplay[] = {'R', 'o', 'u', 'n', 'd', '\0'};
 //win message
-const unsigned char winDisplay[] = {'P', 'l', 'a', 'y', 'e', 'r', ' ', 'O', 'n', 'e', ' ', 'W', 'i', 'n', 's', '\0'};
+const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', '\0'};
 //start message
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
 const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
 
 //--------Helper Functions---------------------------------
+//sleeps for some time
+void sleep(unsigned long x)
+{
+	while (x > 0)
+	{
+		x--;
+	}
+}
+
+//display all custom characters (debug)
+void debugAllCustoms()
+{
+	LCD_Cursor(1); LCD_WriteData(BLOCK);
+	LCD_Cursor(2); LCD_WriteData(TROPHY);
+	LCD_Cursor(3); LCD_WriteData(DIS_ONE);
+	LCD_Cursor(4); LCD_WriteData(DIS_TWO);
+	LCD_Cursor(5); LCD_WriteData(DIS_THREE);
+	LCD_Cursor(6); LCD_WriteData(DIS_FOUR);
+	LCD_Cursor(7); LCD_WriteData(DIS_FIVE);
+	LCD_Cursor(8); LCD_WriteData(DIS_SIX);
+	while(1){}
+}
+
 //returns a series of characters, up to a certain length
 //custom is a bool to determine whether to use custom characters or not
 void getRandKey(int custom)
@@ -112,7 +143,33 @@ void roundWon()
 //runs at the end of each game
 int endGame()
 {
+	timeStarting = 0;
 	return 1;
+}
+
+//display distortion string
+void displayDistortion()
+{
+	//LCD_Cursor(17); LCD_WriteData(BRACKET);
+	LCD_Cursor(17); LCD_WriteData(distortionKey[0]);
+	LCD_Cursor(18); LCD_WriteData(distortionKey[1]);
+	LCD_Cursor(19); LCD_WriteData(distortionKey[2]);
+	LCD_Cursor(20); LCD_WriteData(distortionKey[3]);
+}
+
+//opening screen
+void opening()
+{
+	//OPENING
+	initCustomChar();
+	//debugAllCustoms();
+	LCD_DisplayString(3, openingDisplay);
+	LCD_Cursor(1); LCD_WriteData(BLOCK);
+	LCD_Cursor(2); LCD_WriteData(BLOCK);
+	LCD_Cursor(16); LCD_WriteData(BLOCK);
+	LCD_Cursor(15); LCD_WriteData(BLOCK);
+	sleep(1000000);
+	LCD_ClearScreen();
 }
 
 //checks answer key for correct button press
@@ -140,7 +197,7 @@ int checkKey(char character)
 				lights = 0xFF;
 				PORTB = lights;
 				anspos = 0;
-				
+			
 				roundWon();
 				
 				//inc round
@@ -160,6 +217,12 @@ int checkKey(char character)
 					LCD_WriteData(rounds + '0');
 					sleep(500000);
 					LCD_ClearScreen();
+					
+					//reset time
+					minutes = 0;
+					seconds_ones = -1;
+					seconds_tens = 0;
+					timeTrack = TIMETRACK;
 				}
 				break;
 				
@@ -175,16 +238,8 @@ int checkKey(char character)
 	return status;
 }
 
-//sleeps for some time
-void sleep(unsigned long x)
-{
-	while (x > 0)
-	{
-		x--;
-	}
-}
-
 //--------User defined FSMs--------------------------------
+//manage game states
 enum gameStates{gameStart, gameMenu, gameWait, gameOut} gamestate;
 int gameManager(int state)
 {
@@ -192,14 +247,7 @@ int gameManager(int state)
 	switch(gamestate)
 	{
 		case gameStart:
-			initCustomChar();
-			LCD_DisplayString(3, openingDisplay);
-			LCD_Cursor(1); LCD_WriteData(SMALLBLOCK);
-			LCD_Cursor(2); LCD_WriteData(LARGEBLOCK);
-			LCD_Cursor(16); LCD_WriteData(SMALLBLOCK);
-			LCD_Cursor(15); LCD_WriteData(LARGEBLOCK);
-			sleep(1000000);
-			LCD_ClearScreen();
+			opening();
 			gamestate = gameMenu;
 			break;
 		case gameMenu:
@@ -219,6 +267,8 @@ int gameManager(int state)
 				LCD_Cursor(7); LCD_WriteData(rounds + '0');
 				sleep(500000);
 				LCD_ClearScreen();
+				//enable time
+				timeStarting = 1;
 			}
 			break;
 		case gameWait:
@@ -227,10 +277,7 @@ int gameManager(int state)
 			else
 			{
 				//display distortion
-				LCD_Cursor(17); LCD_WriteData(distortionKey[0]);
-				LCD_Cursor(18); LCD_WriteData(distortionKey[1]);
-				LCD_Cursor(19); LCD_WriteData(distortionKey[2]);
-				LCD_Cursor(20); LCD_WriteData(distortionKey[3]);
+				displayDistortion();
 				x = GetKeypadKey();
 				if(x == '\0')
 				{
@@ -311,6 +358,7 @@ int gameManager(int state)
 	return gamestate;
 }
 
+//manage menu
 enum menusStates{menuStart, gameconfigscreenwait, playscreen, menuOut} menustate;
 int menus(int state)
 {
@@ -382,6 +430,7 @@ int menus(int state)
 	return menustate;
 }
 
+//seed for random variables
 enum seedStates{seedStart, seedUpdate} seedstate;
 int seeder(int state)
 {
@@ -412,6 +461,86 @@ int seeder(int state)
 	return seedstate;
 }
 
+//timer
+enum timeStates{timeStart, timeWait, timeTick, timeRestart} timestate;
+int timer(int state)
+{
+	switch(timestate)
+	{
+		case timeStart:
+		timestate = timeWait;
+		break;
+		case timeWait:
+		if (timeStarting) timestate = timeTick; 
+		break;
+		case timeTick:
+		if (!timeStarting) timestate = timeRestart;
+		break;
+		case timeRestart:
+		timestate = timeWait;
+		break;
+	}
+	switch(timestate)
+	{
+		case timeStart:
+		break;
+		case timeWait:
+		break;
+		case timeTick:
+		if (timeTrack == TIMETRACK)
+		{
+			timeTrack = 0;
+			seconds_ones++;
+			if (seconds_ones == 10)
+			{
+				seconds_ones = 0;
+				seconds_tens++;
+				if (seconds_tens == 6)
+				{
+					seconds_tens = 0;
+					minutes++;
+					if (minutes == 10)
+					{
+						minutes = 0;
+					}
+				}
+			}
+		
+			LCD_Cursor(29); LCD_WriteData(minutes + '0');
+			LCD_Cursor(30); LCD_WriteData(58); //colon
+			LCD_Cursor(31); LCD_WriteData(seconds_tens + '0');
+			LCD_Cursor(32); LCD_WriteData(seconds_ones + '0');
+		}
+		else
+		{
+			timeTrack++;
+		}
+		break;
+		case timeRestart:
+		seconds_ones = -1;
+		seconds_tens = 0;
+		minutes = 0;
+		timeTrack = TIMETRACK;
+		break;
+	}
+	return timestate;
+}
+
+/*
+enum timeStates{timeStart, timeTick, timeRestart} timestate;
+int timer(int state)
+{
+	switch(timestate)
+	{
+		
+	}
+	switch(timestate)
+	{
+		
+	}
+	return timestate;
+}*/
+
 int main()
 {	
 	// Set Data Direction Registers
@@ -429,11 +558,12 @@ int main()
 	// Period for the tasks
 	unsigned long int keyPad_period = 1;
 	unsigned long int menus_period = 1;
-	unsigned long int seeder_period = 1;
+	unsigned long int seeder_period = 20;
+	unsigned long int time_period = 1;
 	
 	//Declare an array of tasks
-	static task task1, task2, task3;
-	task *tasks[] = {&task1, &task2, &task3};
+	static task task1, task2, task3, task4;
+	task *tasks[] = {&task1, &task2, &task3, &task4};
 	const unsigned short numTasks = sizeof(tasks) / sizeof(task*);
 	
 	// Task 1
@@ -453,6 +583,12 @@ int main()
 	task3.period = seeder_period;
 	task3.elapsedTime = seeder_period;
 	task3.TickFct = &seeder;
+	
+	//Task 4
+	task4.state = timeStart;
+	task4.period = time_period;
+	task4.elapsedTime = time_period;
+	task4.TickFct = &timer;
 	
 	// Set the timer and turn it on
 	TimerSet(1);
