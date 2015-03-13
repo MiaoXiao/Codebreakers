@@ -17,7 +17,7 @@
 #include "stack.h"
 #include "timer.h"
 #include "../customchar.h"
-//#include "../usart.h"
+#include "../usart.h"
 
 //--------Global Variables---------------------------------
 //for button presses
@@ -81,8 +81,8 @@ const unsigned char winDisplay[] = {'P', '1', ' ', 'W', 'i', 'n', 's', ' ', ' ',
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
 const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
-
 //--------Helper Functions---------------------------------
+
 //sleeps for some time
 void sleep(unsigned long x)
 {
@@ -97,12 +97,8 @@ void setNewDisruptionTime()
 {
 	disruption_changed = 0;
 	srand(seedVar);
-	int newDisruptionSec = disruption_second + (rand() % (50 - 5)) + 5;
-	if (newDisruptionSec > 59)
-	{
-		newDisruptionSec = newDisruptionSec - 59;
-	}
-	disruption_second = newDisruptionSec;
+	int newDisruptionSec = (rand() % (50 - 5)) + 5;
+	disruption_second += newDisruptionSec;
 }
 
 //slightly change disruption key
@@ -216,6 +212,7 @@ void displayDistortion()
 	LCD_Cursor(18); LCD_WriteData(disruptionKey[1]);
 	LCD_Cursor(19); LCD_WriteData(disruptionKey[2]);
 	LCD_Cursor(20); LCD_WriteData(disruptionKey[3]);
+	LCD_Cursor(33);
 }
 
 //opening screen
@@ -229,6 +226,7 @@ void opening()
 	LCD_Cursor(2); LCD_WriteData(BLOCK);
 	LCD_Cursor(16); LCD_WriteData(BLOCK);
 	LCD_Cursor(15); LCD_WriteData(BLOCK);
+	LCD_Cursor(33);
 	sleep(1000000);
 	LCD_ClearScreen();
 }
@@ -266,7 +264,6 @@ void newRound()
 	getPowerup();
 }
 
-
 //checks answer key for correct button press
 int checkKey(char character)
 {
@@ -303,6 +300,7 @@ int checkKey(char character)
 				LCD_Cursor(24); LCD_WriteData(answerKey[2]);
 				LCD_Cursor(25); LCD_WriteData(answerKey[3]);
 				LCD_Cursor(26); LCD_WriteData(answerKey[4]);
+				LCD_Cursor(33);
 				sleep(2000000);
 				LCD_ClearScreen();
 				
@@ -318,6 +316,7 @@ int checkKey(char character)
 					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
 					LCD_WriteData(rounds + '0');
+					LCD_Cursor(33);
 					sleep(1000000);
 					LCD_ClearScreen();
 				}
@@ -343,6 +342,7 @@ void checkCode()
 	{
 		//reset pos
 		anspos = 0;
+		PORTB = 0x00;
 		if (disruption_changed) //right!
 		{
 			getPowerup();
@@ -350,7 +350,16 @@ void checkCode()
 		}
 		else //wrong!
 		{
-			LCD_Cursor(7); LCD_WriteData('W');
+			LCD_DisplayString(6, "FROZEN");
+			LCD_Cursor(33);
+			sleep(500000);
+			LCD_DisplayString(6, "      ");
+			
+			//redisplay time
+			LCD_Cursor(29); LCD_WriteData(minutes + '0');
+			LCD_Cursor(30); LCD_WriteData(58); //colon
+			LCD_Cursor(31); LCD_WriteData(seconds_tens + '0');
+			LCD_Cursor(32); LCD_WriteData(seconds_ones + '0');
 		}
 		
 	}
@@ -365,8 +374,8 @@ void checkCode()
 				//actually run the powerup
 				if (code[1] == 'A'){} //Attack: freeze other player's screen for 2 seconds
 				else if (code[1] == 'B'){} //Bug: reverse other player's controls for 4 seconds
-				else if (code[1] == 'C'){} 
-				else if (code[1] == 'D') {} //Disrupt: other player's code is reset
+				else if (code[1] == 'C'){} //Counter: if the other player uses a powerup (besides another Counter) in the next 4 seconds, the effect is applied on himself
+				else if (code[1] == 'D') {} //Disrupt: other player's code progress is reset, and their screen is frozen for 1 second
 				//update screen (remove powerup)
 				LCD_Cursor(14 + newpos); LCD_WriteData(' ');
 				//remove number of powerups
@@ -406,6 +415,7 @@ int gameManager(int state)
 				LCD_DisplayString(1, roundDisplay);
 				LCD_Cursor(7);
 				LCD_WriteData(rounds + '0');
+				LCD_Cursor(33);
 				sleep(1000000);
 				LCD_ClearScreen();
 				
@@ -518,6 +528,7 @@ int gameManager(int state)
 				}					
 				
 			}
+			LCD_Cursor(33);
 			Flag = 1;
 			break;
 		}
@@ -540,6 +551,7 @@ int menus(int state)
 			menustate = gameconfigscreenwait;
 			break;
 		case gameconfigscreenwait:
+			LCD_Cursor(33);
 			x = GetKeypadKey();
 			if(x == '\0')
 			{
@@ -806,10 +818,11 @@ int main()
 	DDRA = 0xFF; PORTA = 0x00;
 	DDRB = 0xFF; PORTB = 0x00;
 	DDRC = 0xF0; PORTC = 0x0F;
-	DDRD = 0xFF; PORTD = 0x00;
+	DDRD = 0xF0; PORTD = 0x0F;
 	
 	LCD_init();
-	
+	//initUSART(0);
+	//initUSART(1);
 	Flag = 0;
 	
 	// Period for the tasks
