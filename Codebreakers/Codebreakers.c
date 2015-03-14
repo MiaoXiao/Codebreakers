@@ -67,6 +67,13 @@ int timeTrack = TIMETRACK;
 int disruption_second = 5;
 //whether disruption string has been changed or not
 bool disruption_changed = false;
+//whether player is immune to powerups or not
+bool immune = false;
+//time until immune is over
+int immune_counter = 0;
+
+bool reverseControls = false;
+int reverseControls_time = 0;
 
 //MACROS for custom char
 #define BLOCK 6
@@ -97,8 +104,8 @@ const unsigned char loseDisplay[] = {'L', 'o', 's', 't', '!', ' ', ' ', ' ', ' '
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
 const unsigned char configDisplay[] = {'P', 'r', 'e', 's', 's', ' ', '0', ' ', 't', 'o', ' ', 's', 't', 'a', 'r', 't', '\0'};
-//--------Helper Functions---------------------------------
 
+//--------Helper Functions---------------------------------
 //sleeps for some time
 void sleep(unsigned long x)
 {
@@ -117,7 +124,7 @@ void freeze( )
 	LCD_Cursor(9); LCD_WriteData('Z');
 	LCD_Cursor(10); LCD_WriteData('E');
 	LCD_Cursor(11); LCD_WriteData('N');
-	screenLoop = 3000;
+	screenLoop = 1000 * 10;
 	LCD_Cursor(33);
 	time_exception = true;
 }
@@ -127,7 +134,7 @@ void setNewDisruptionTime()
 {
 	disruption_changed = false;
 	srand(seedVar);
-	int newDisruptionSec = (rand() % (50 - 5)) + 5;
+	int newDisruptionSec = (rand() % (20 - 5)) + 5;
 	disruption_second += newDisruptionSec;
 }
 
@@ -188,10 +195,10 @@ void debugAllCustoms()
 
 //returns a series of characters, up to a certain length
 //custom is a bool to determine whether to use custom characters or not
+char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
 void getRandKey(int custom)
 {
 	srand(seedVar);
-	char allKeypad[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
 	//randomly generated key that both players must copy
 	int i = 0;
 	if (custom)
@@ -242,6 +249,8 @@ void getPowerup()
 //init all these things each new totalRounds
 void beginNewRound()
 {	
+	reverseControls = false;
+	reverseControls_time = 0;
 	//get new disruption time
 	setNewDisruptionTime();
 	
@@ -270,6 +279,8 @@ void beginNewRound()
 	lostGame = false;
 	timeStarting = true;
 	roundEnd = false;
+	
+	immune_counter = 0;
 }
 
 //checks answer key for correct button press
@@ -343,19 +354,27 @@ void checkCode()
 				//actually run the powerup
 				if(USART_IsSendReady(0))
 				{
-					if (code[1] == 'A')  //Attack: freeze other player's screen for 3 seconds
+					if (code[1] == 'A')  //Attack: freeze other player's screen for 5 seconds and reset their code progress
 					{
 						USART_Send('A', 0);
 					}
-					else if (code[1] == 'B') //Bug: reverse other player's controls for 4 seconds
+					else if (code[1] == 'B') //Bug: reverse their entire keyboard for 30 seconds
 					{
 						USART_Send('B', 0);
 					}
-					else if (code[1] == 'C') //Counter: player is immune to the other player's powerups
+					else if (code[1] == 'C') //Counter: player is immune to negative powerups for 20 seconds
 					{
-						USART_Send('C', 0);
+						immune = true;
+						immune_counter = (30 * 1000);
+						LCD_Cursor(5); LCD_WriteData('I');
+						LCD_Cursor(6); LCD_WriteData('M');
+						LCD_Cursor(7); LCD_WriteData('M');
+						LCD_Cursor(8); LCD_WriteData('U');
+						LCD_Cursor(9); LCD_WriteData('N');
+						LCD_Cursor(10); LCD_WriteData('E');
+						LCD_Cursor(11); LCD_WriteData(' ');
 					}
-					else if (code[1] == 'D') //Disrupt: other player's code progress is reset, and their screen is frozen for 1 second
+					else if (code[1] == 'D') //Disrupt: one digit on the other player's code is permanently changed
 					{
 						USART_Send('D', 0);
 					}
@@ -370,6 +389,7 @@ void checkCode()
 			newpos++;
 		}
 	}
+	LCD_Cursor(33);
 }
 
 //--------User defined FSMs--------------------------------
@@ -413,6 +433,7 @@ int gameManager(int state)
 			beginNewRound();
 			LCD_ClearScreen();
 			displayDistortion();
+			//getPowerup();
 			gamestate = gameWait;
 			break;
 		case roundEndScreen: //after displaying who won/lost, find out if you should end the game or not
@@ -422,7 +443,7 @@ int gameManager(int state)
 			//reset lights
 			PORTB = 0x00;
 			roundCounter--;
-			if (roundCounter <= 0) // end game
+			if (1) // end game
 			{
 				//disable time
 				timeStarting = false;
@@ -446,10 +467,45 @@ int gameManager(int state)
 					gamestate = roundEndScreen;
 					lostGame = true;
 				}
-				if(temp == 'A' || temp == 'B' || temp == 'C' || temp == 'D')
+				else if (!immune) //player is only affected if they are not immune
 				{
-					freeze();
+					if (temp == 'A')
+					{
+						freeze();
+					}
+					else if (temp == 'B')
+					{	
+						reverseControls = true;
+						reverseControls_time = (30 * 1000);
+						LCD_Cursor(6); LCD_WriteData('B');
+						LCD_Cursor(5); LCD_WriteData('U');
+						LCD_Cursor(7); LCD_WriteData('G');
+						LCD_Cursor(8); LCD_WriteData(' ');
+						LCD_Cursor(9); LCD_WriteData(' ');
+						LCD_Cursor(10); LCD_WriteData(' ');
+						LCD_Cursor(11); LCD_WriteData(' ');
+						LCD_Cursor(33);
+					}
+					else if (temp == 'D')
+					{
+						int randNum = rand() % 10;
+						int randpos = rand() % 5;
+						if(allKeypad[randNum] != answerKey[randpos])
+						{
+							answerKey[randpos] = allKeypad[randNum];
+						}
+						else
+						{
+							if (randNum == 0) answerKey[randpos] = allKeypad[1];
+							else
+							{
+								answerKey[randpos] = allKeypad[randNum - 1];
+							}
+						}
+						
+					}
 				}
+
 				USART_Flush(0);
 			}
 			else
@@ -521,7 +577,6 @@ int gameManager(int state)
 				x = GetKeypadKey();
 				char lastEntered = '\0';
 				char codeEntered = '\0';
-				bool reverseControls = false;
 				switch (x) 
 				{
 					case '\0': break;
@@ -754,11 +809,27 @@ int seeder(int state)
 enum timeStates{timeStart, timeWait, timeTick, timeRestart} timestate;
 int timer(int state)
 {
+
 	//check if looping a screen
-	if (screenLoop > 1) screenLoop--;
+	if (screenLoop > 1) 
+	{
+		if (USART_HasReceived(0))
+		{
+			char temp = USART_Receive(0);
+			//check if other player won
+			if(temp == 'l')
+			{
+				gamestate = roundEndScreen;
+				lostGame = true;
+				screenLoop = 0;
+			}
+		}
+		screenLoop--;
+	}
 	else if (screenLoop == 1)
 	{
 		//clear any powerup message
+		LCD_Cursor(5); LCD_WriteData(' ');
 		LCD_Cursor(6); LCD_WriteData(' ');
 		LCD_Cursor(7); LCD_WriteData(' ');
 		LCD_Cursor(8); LCD_WriteData(' ');
@@ -767,6 +838,37 @@ int timer(int state)
 		LCD_Cursor(11); LCD_WriteData(' '); LCD_Cursor(33);
 		screenLoop--;
 		time_exception = false;
+	}
+	if (immune)
+	{
+		reverseControls = false;
+		immune_counter--;
+		if (immune_counter <= 0)
+		{
+			immune = false;
+			LCD_Cursor(5); LCD_WriteData(' ');
+			LCD_Cursor(6); LCD_WriteData(' ');
+			LCD_Cursor(7); LCD_WriteData(' ');
+			LCD_Cursor(8); LCD_WriteData(' ');
+			LCD_Cursor(9); LCD_WriteData(' ');
+			LCD_Cursor(10); LCD_WriteData(' ');
+			LCD_Cursor(11); LCD_WriteData(' '); LCD_Cursor(33);
+		}
+	}
+	else if (reverseControls)
+	{
+		reverseControls_time--;
+		if (reverseControls_time <= 0) 
+		{
+			reverseControls = false;
+			LCD_Cursor(5); LCD_WriteData(' ');
+			LCD_Cursor(6); LCD_WriteData(' ');
+			LCD_Cursor(7); LCD_WriteData(' ');
+			LCD_Cursor(8); LCD_WriteData(' ');
+			LCD_Cursor(9); LCD_WriteData(' ');
+			LCD_Cursor(10); LCD_WriteData(' ');
+			LCD_Cursor(11); LCD_WriteData(' '); LCD_Cursor(33);
+		}
 	}
 	switch(timestate)
 	{
