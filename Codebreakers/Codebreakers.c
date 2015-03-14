@@ -36,7 +36,7 @@ unsigned char lights = 0x00;
 
 //number of rounds
 int rounds;
-int currentRound = 5;
+int currentRound = 1;
 
 //whether game is running or not
 int playingNow = 0;
@@ -84,7 +84,7 @@ const unsigned char loseDisplay[] = {'L', 'o', 's', 't', '!', ' ', ' ', ' ', ' '
 //start message
 const unsigned char openingDisplay[] = {'C', 'o', 'd', 'e', 'b', 'r', 'e', 'a', 'k', 'e', 'r', 's', ' ', ' ', 'R', 'i', 'c', 'a', ' ', 'F', 'e', 'n', 'g', '\0'};
 //config message
-const unsigned char configDisplay[] = {'H', 'o', 'w', ' ', 'm', 'a', 'n', 'y', ' ', 'r', 'o', 'u', 'n', 'd', 's', '?', '\0'};
+const unsigned char configDisplay[] = {'P', 'r', 'e', 's', 's', ' ', '0', ' ', 't', 'o', ' ', 's', 't', 'a', 'r', 't', '\0'};
 //--------Helper Functions---------------------------------
 
 //sleeps for some time
@@ -99,39 +99,22 @@ void sleep(unsigned long x)
 //freeze game
 void freeze(unsigned long t)
 {
+	LCD_Cursor(6); LCD_WriteData('F');
+	LCD_Cursor(7); LCD_WriteData('R');
+	LCD_Cursor(8); LCD_WriteData('O');
+	LCD_Cursor(9); LCD_WriteData('Z');
+	LCD_Cursor(10); LCD_WriteData('E');
+	LCD_Cursor(11); LCD_WriteData('N');
 	//LCD_DisplayString(6, "FROZEN");
 	LCD_Cursor(33);
 	sleep(t);
-	//LCD_DisplayString(6, "      ");
-				
-	//redisplay time
-	LCD_Cursor(29); LCD_WriteData(minutes + '0');
-	LCD_Cursor(30); LCD_WriteData(58); //colon
-	LCD_Cursor(31); LCD_WriteData(seconds_tens + '0');
-	LCD_Cursor(32); LCD_WriteData(seconds_ones + '0');
-}
-
-int reverseControls = 0;
-int effectEnd = 0;
-//disable user with powerup
-void effect()
-{
-	unsigned char effect;
-	effect = USART_Receive(1);
-	if (effect == 'A')
-	{
-		freeze(5000000);
-	}
-	else if (effect == 'B')
-	{
-		reverseControls = 1;
-		effectEnd = 10;
-	}
-	else if (effect == 'D')
-	{
-		anspos = 0;
-	}
-	
+	LCD_Cursor(6); LCD_WriteData(' ');
+	LCD_Cursor(7); LCD_WriteData(' ');
+	LCD_Cursor(8); LCD_WriteData(' ');
+	LCD_Cursor(9); LCD_WriteData(' ');
+	LCD_Cursor(10); LCD_WriteData(' ');
+	LCD_Cursor(11); LCD_WriteData(' ');
+	LCD_Cursor(33);
 }
 
 //get next second to change disruption again
@@ -217,8 +200,8 @@ void getRandKey(int custom)
 	{
 		for (i = 0; i < 5; ++i)
 		{
-			//answerKey[i] = allKeypad[rand() % 10];
-			answerKey[i] = allKeypad[1];
+			answerKey[i] = allKeypad[rand() % 10];
+			//answerKey[i] = allKeypad[1];
 		}
 		answerKey[i] = '\0';
 	}
@@ -251,10 +234,11 @@ void getPowerup()
 }
 
 //runs at the end of each game
-int endGame()
+void endGame()
 {
 	timeStarting = 0;
-	return 1;
+	playingNow = 0;
+	PORTB = 0x00;
 }
 
 //opening screen
@@ -278,8 +262,7 @@ void newRound()
 {	
 	setNewDisruptionTime();
 	//reset lights
-	lights = 0x00;
-	PORTB = lights;
+	PORTB = 0x00;
 	
 	//reset ans pos
 	anspos = 0;
@@ -297,8 +280,8 @@ void newRound()
 	//get new puzzle
 	getRandKey(0);
 
-	reverseControls = 0;
-	effectEnd = 0;
+	//reverseControls = 0;
+	//effectEnd = 0;
 	
 	//reset time
 	minutes = 0;
@@ -306,7 +289,8 @@ void newRound()
 	seconds_tens = 0;
 	timeTrack = TIMETRACK;
 	lostGame = 0;
-	getPowerup();
+	
+	//getPowerup();
 	//display distortion
 	displayDistortion();
 }
@@ -343,6 +327,7 @@ int checkKey(char character)
 				{
 					USART_Send('l', 0);
 				}
+				lostGame = 0;
 				status = 1;
 				break;
 		}
@@ -373,7 +358,7 @@ void checkCode()
 		}
 		else //wrong!
 		{
-			freeze(50000);
+			freeze(1000000);
 		}
 		
 	}
@@ -398,7 +383,7 @@ void checkCode()
 					}
 					else if (code[1] == 'C') //Counter: if the other player uses a powerup (besides another Counter) in the next 4 seconds, the effect is applied on himself
 					{
-						
+						USART_Send('C', 0);
 					}
 					else if (code[1] == 'D') //Disrupt: other player's code progress is reset, and their screen is frozen for 1 second
 					{
@@ -438,7 +423,7 @@ int gameManager(int state)
 				//start the game for the other player too
 				if (USART_IsSendReady(0))
 				{
-					USART_Send(0xFF, 0);
+					USART_Send(currentRound, 0);
 				}
 
 				//init game
@@ -450,6 +435,10 @@ int gameManager(int state)
 				LCD_DisplayString(1, roundDisplay);
 				LCD_Cursor(7);
 				LCD_WriteData(rounds + '0');
+				LCD_Cursor(8);
+				LCD_WriteData('/');
+				LCD_Cursor(9);
+				LCD_WriteData(currentRound + '0');
 				LCD_Cursor(33);
 				sleep(1000000);
 				LCD_ClearScreen();
@@ -458,6 +447,7 @@ int gameManager(int state)
 				
 				//enable time
 				timeStarting = 1;
+				//timeTrack = TIMETRACK;
 				gamestate = gameWait;
 			}
 			break;
@@ -473,6 +463,10 @@ int gameManager(int state)
 				{
 					gamestate = results;
 					lostGame = 1;
+				}
+				if(temp == 'A' || temp == 'B' || temp == 'C' || temp == 'D')
+				{
+					freeze(1000000);
 				}
 				USART_Flush(0);
 			}
@@ -529,12 +523,14 @@ int gameManager(int state)
 				sleep(2000000);
 				LCD_ClearScreen();
 			
-				rounds++;
 				//if all rounds finished, go back to gameconfig
-				if (rounds == currentRound)
+				if (rounds == currentRound + 1)
 				{
 					//end game
 					endGame();
+					LCD_DisplayString(1, configDisplay);
+					LCD_Cursor(17);
+					LCD_WriteData(currentRound + '0');
 					gamestate = gameMenu;
 				}
 				else
@@ -543,14 +539,30 @@ int gameManager(int state)
 					LCD_DisplayString(1, roundDisplay);
 					LCD_Cursor(7);
 					LCD_WriteData(rounds + '0');
+					LCD_Cursor(8);
+					LCD_WriteData('/');
+					LCD_Cursor(9);
+					LCD_WriteData(currentRound + '0');
 					LCD_Cursor(33);
 					sleep(1000000);
+					
 					LCD_ClearScreen();
 					//continueplaying
 					newRound();
 					playingNow = 1;
 					gamestate = gameWait;
 				}
+				//start the game for the other player too
+				if (USART_IsSendReady(0))
+				{
+					USART_Send(currentRound, 0);
+				}
+
+				//init game
+				LCD_ClearScreen();
+				//init starting round
+				rounds = 1;
+				
 				break;
 			case gameOut:
 				//LCD_ClearScreen();
@@ -558,6 +570,7 @@ int gameManager(int state)
 				x = GetKeypadKey();
 				char lastEntered = '\0';
 				char codeEntered = '\0';
+				int reverseControls = 0;
 				switch (x) {
 					// All 5 LEDs on
 					case '\0': break;
@@ -570,7 +583,7 @@ int gameManager(int state)
 					break;
 					case '4':  if (!reverseControls) lastEntered = '4'; else lastEntered = '3';
 					break;
-					case '5': ; if (!reverseControls) lastEntered = '5'; else lastEntered = '6';
+					case '5': if (!reverseControls) lastEntered = '5'; else lastEntered = '6';
 					break;
 					case '6':  if (!reverseControls) lastEntered = '6'; else lastEntered = '5';
 					break;
@@ -605,6 +618,7 @@ int gameManager(int state)
 				//check if next round
 				if (checkKey(lastEntered) == 1)
 				{
+					playingNow = 0;
 					gamestate = results;
 				}
 			}
@@ -642,7 +656,7 @@ int menus(int state)
 		case menuStart:
 			LCD_DisplayString(1, configDisplay);
 			LCD_Cursor(17);
-			LCD_WriteData(currentRound + '0');
+			//LCD_WriteData(currentRound + '0');
 			menustate = gameconfigscreenwait;
 			break;
 		case gameconfigscreenwait:
@@ -650,19 +664,24 @@ int menus(int state)
 			if (USART_HasReceived(0))
 			{
 				playingNow = 1;
+				char temp = USART_Receive(0);
+				currentRound = temp;
+				menustate = playscreen;
 				USART_Flush(0);
-			}
-			
-			LCD_Cursor(33);
-			x = GetKeypadKey();
-			if(x == '\0')
-			{
-				menustate = gameconfigscreenwait;
-				Flag = 0;
 			}
 			else
 			{
-				menustate = menuOut;
+				LCD_Cursor(33);
+				x = GetKeypadKey();
+				if(x == '\0')
+				{
+					menustate = gameconfigscreenwait;
+					Flag = 0;
+				}
+				else
+				{
+					menustate = menuOut;
+				}
 			}
 			break;
 		case playscreen:
@@ -692,7 +711,7 @@ int menus(int state)
 			switch (x) {
 				case '\0': break;
 				case '*': //inc round numb
-				if (currentRound != 1) currentRound--; LCD_WriteData(currentRound + '0');
+				if (currentRound != 1) //LCD_WriteData(currentRound + '0');
 				break;
 				case '0': //game is now starting
 				playingNow = 1;
@@ -700,7 +719,7 @@ int menus(int state)
 				menustate = playscreen;
 				break;
 				case '#': //dec round numb
-				if (currentRound != 9) currentRound++; LCD_WriteData(currentRound + '0');
+				if (currentRound != 9) //LCD_WriteData(currentRound + '0');
 				break;
 				default:
 					break;
@@ -769,18 +788,8 @@ int timer(int state)
 		case timeWait:
 		break;
 		case timeTick:
-		if (timeTrack == TIMETRACK)
+		if(timeTrack == 1000)
 		{
-			//check to see if negative effect wore off
-			if(effectEnd <= 0)
-			{
-				effectEnd--;
-			}
-			else
-			{
-				effectEnd = 0;
-				reverseControls = 0;
-			}
 			//check if it is time to change disruption string
 			if ((seconds_ones + (seconds_tens * 10)) == disruption_second)
 			{
@@ -803,7 +812,6 @@ int timer(int state)
 					}
 				}
 			}
-		
 			LCD_Cursor(29); LCD_WriteData(minutes + '0');
 			LCD_Cursor(30); LCD_WriteData(58); //colon
 			LCD_Cursor(31); LCD_WriteData(seconds_tens + '0');
@@ -813,98 +821,18 @@ int timer(int state)
 		{
 			timeTrack++;
 		}
+		
+
+
 		break;
 		case timeRestart:
 		seconds_ones = -1;
 		seconds_tens = 0;
 		minutes = 0;
-		timeTrack = TIMETRACK;
+		timeTrack = 0;
 		break;
 	}
 	return timestate;
-}
-
-unsigned char resetCode[] = {'#', '#', '#', '#', '#', '0', '4', '1', '5', '\0'};
-int resetpos = 0;
-enum resetStates{resetStart, resetWait, actualReset, resetOut} resetstate;
-int hardReset(int state)
-{
-	unsigned char x;
-	switch(resetstate)
-	{
-		case resetStart:
-		resetpos = 0;
-		resetstate = resetWait;
-		break;
-		case resetWait:
-			x = GetKeypadKey();
-			if (resetCode[resetpos] == '\0')
-			{
-				resetstate = actualReset;
-			}
-			else if (x == '\0')
-			{
-				resetstate = resetWait;
-				Flag = 0;
-			}
-			else
-			{
-				resetstate = resetOut;
-			}
-			break;
-		case actualReset:
-		resetstate = resetStart;
-		break;
-		case resetOut:
-		resetstate = resetWait;
-		break;
-
-	}
-	if (!Flag)
-	{
-		switch(resetstate)
-		{
-			case resetStart:
-			break;
-			case resetWait:
-			break;
-			case actualReset: //reset game
-			playingNow = 0;
-			gamestate = gameStart;
-			LCD_Cursor(1); LCD_WriteData('Y');
-			break;
-			case resetOut:
-			x = GetKeypadKey();
-			switch (x) {
-				case '\0': resetpos = 0; break;
-				case '0':
-				if (resetpos == 5) resetpos++;
-				else resetpos = 0;
-				break;
-				case '1':
-				if (resetpos == 7) resetpos++;
-				else resetpos = 0;
-				break;
-				case '4':
-				if (resetpos == 6) resetpos++;
-				else resetpos = 0;
-				break;
-				case '5':
-				if (resetpos == 8) resetpos++;
-				else resetpos = 0;
-				break;
-				case '#':
-				if (resetpos < 5) resetpos++;
-				else resetpos = 0;
-				break;
-				default:
-				break;
-			}
-			Flag = 1;
-			break;
-		}
-	}
-	return resetstate;
 }
 
 /*
@@ -944,7 +872,7 @@ int main()
 	unsigned long int hardReset_period = 1;
 	
 	//Declare an array of tasks
-	static task task1, task2, task3, task4, task5;
+	static task task1, task2, task3, task4;
 	task *tasks[] = {&task1, &task2, &task3, &task4};
 	const unsigned short numTasks = sizeof(tasks) / sizeof(task*);
 	
@@ -971,12 +899,6 @@ int main()
 	task4.period = time_period;
 	task4.elapsedTime = time_period;
 	task4.TickFct = &timer;
-	
-	//Task 5
-	task5.state = resetStart;
-	task5.period = hardReset_period;
-	task5.elapsedTime = hardReset_period;
-	task5.TickFct = &hardReset;
 	
 	// Set the timer and turn it on
 	TimerSet(1);
