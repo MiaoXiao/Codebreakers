@@ -213,8 +213,8 @@ void getRandKey(int custom)
 	{
 		for (i = 0; i < 5; ++i)
 		{
-			//answerKey[i] = allKeypad[rand() % 10];
-			answerKey[i] = allKeypad[0];
+			answerKey[i] = allKeypad[rand() % 10];
+			//answerKey[i] = allKeypad[0];
 		}
 		answerKey[i] = '\0';
 	}
@@ -365,7 +365,7 @@ void checkCode()
 					else if (code[1] == 'C') //Counter: player is immune to negative powerups for 20 seconds
 					{
 						immune = true;
-						immune_counter = (30 * 1000);
+						immune_counter = (20 * 1000);
 						LCD_Cursor(5); LCD_WriteData('I');
 						LCD_Cursor(6); LCD_WriteData('M');
 						LCD_Cursor(7); LCD_WriteData('M');
