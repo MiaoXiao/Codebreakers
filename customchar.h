@@ -13,16 +13,30 @@ void createBlock()
 	LCD_WriteData(0x0);
 }
 
-void createTrophy()
+void createWinLogo()
 {
-	LCD_WriteData(0x15);
-	LCD_WriteData(0x1f);
-	LCD_WriteData(0xe);
+	//0x0,0x1,0x3,0x16,0x1c,0x8,0x0,0x0
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x1);
+	LCD_WriteData(0x3);
+	LCD_WriteData(0x16);
+	LCD_WriteData(0x1c);
+	LCD_WriteData(0x8);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x0);
+}
+
+void createLoseLogo()
+{
+	//0x0,0x1b,0xe,0x4,0xe,0x1b,0x0,0x0
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x1b);
 	LCD_WriteData(0xe);
 	LCD_WriteData(0x4);
-	LCD_WriteData(0x4);
 	LCD_WriteData(0xe);
-	LCD_WriteData(0x1f);
+	LCD_WriteData(0x1b);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x0);
 }
 
 void createDisruption_One()
@@ -63,13 +77,14 @@ void createDisruption_Three()
 
 void createDisruption_Four()
 {
+	//0x0,0x0,0xe,0xe,0xe,0x0,0x0,0x0
+	LCD_WriteData(0x0);
 	LCD_WriteData(0x0);
 	LCD_WriteData(0xe);
 	LCD_WriteData(0xe);
 	LCD_WriteData(0xe);
-	LCD_WriteData(0xe);
-	LCD_WriteData(0xe);
-	LCD_WriteData(0xe);
+	LCD_WriteData(0x0);
+	LCD_WriteData(0x0);
 	LCD_WriteData(0x0);
 }
 
@@ -114,7 +129,8 @@ void initCustomChar()
 {
 	LCD_WriteCommand(0x40);
 	createBlock();
-	createTrophy();
+	createWinLogo();
+	createLoseLogo();
 	//createBracket();
 	createDisruption_One();
 	createDisruption_Two();
