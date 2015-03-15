@@ -14,8 +14,8 @@
 #include "keypad.h"
 #include "scheduler.h"
 #include "timer.h"
-#include "../customchar.h"
-#include "../usart.h"
+#include "customchar.h"
+#include "usart.h"
 
 //declare bool type
 typedef int bool;
@@ -116,13 +116,14 @@ void sleep(unsigned long x)
 //freeze game
 void freeze( )
 {
-	LCD_Cursor(6); LCD_WriteData('F');
-	LCD_Cursor(7); LCD_WriteData('R');
-	LCD_Cursor(8); LCD_WriteData('O');
-	LCD_Cursor(9); LCD_WriteData('Z');
-	LCD_Cursor(10); LCD_WriteData('E');
-	LCD_Cursor(11); LCD_WriteData('N');
-	screenLoop = 1000 * 10;
+	LCD_Cursor(5); LCD_WriteData('F');
+	LCD_Cursor(6); LCD_WriteData('R');
+	LCD_Cursor(7); LCD_WriteData('O');
+	LCD_Cursor(8); LCD_WriteData('Z');
+	LCD_Cursor(9); LCD_WriteData('E');
+	LCD_Cursor(10); LCD_WriteData('N');
+	LCD_Cursor(11); LCD_WriteData(' ');
+	screenLoop += 1000 * 10;
 	LCD_Cursor(33);
 	time_exception = true;
 }
@@ -475,8 +476,8 @@ int gameManager(int state)
 					{	
 						reverseControls = true;
 						reverseControls_time = (30 * 1000);
-						LCD_Cursor(6); LCD_WriteData('B');
-						LCD_Cursor(5); LCD_WriteData('U');
+						LCD_Cursor(5); LCD_WriteData('B');
+						LCD_Cursor(6); LCD_WriteData('U');
 						LCD_Cursor(7); LCD_WriteData('G');
 						LCD_Cursor(8); LCD_WriteData(' ');
 						LCD_Cursor(9); LCD_WriteData(' ');
@@ -972,7 +973,6 @@ int main()
 	unsigned long int menus_period = 1;
 	unsigned long int seeder_period = 250;
 	unsigned long int time_period = 1;
-	unsigned long int hardReset_period = 1;
 	
 	//Declare an array of tasks
 	static task task1, task2, task3, task4;

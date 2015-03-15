@@ -1,3 +1,4 @@
+//SORCE from IEEE
 #ifndef BIT_H
 #define BIT_H
 
