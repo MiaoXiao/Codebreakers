@@ -7,22 +7,21 @@ To excel at this game, one must master concentration, memory, and dexterity!
 
 ## How to win
 Both players must enter a randomly generated code on their keypad in order to win. When a player enters a correct character in the right sequence, their side of the LED display will light up in order.
+
+<br> ![Alt text](Codebreakers/pictures/led.JPG "LED") <br>
+
 When all 5 LEDS light up on the corresponding player's side, that player will win the game!
 If an incorrect character in the sequence is inputted, the player's side of the LED display will reset. This way, both players will eventually be able to correctly input the entire code, given that they can remember the entire combination.
 
 ## Power Ups
 
+At the bottom left of both screens, is the Powerup String, which is a series of 4 random characters. If at any point this string changes during the course of a game, any player may enter `**` to obtain a random powerup! 
+
 <br> ![Alt text](Codebreakers/pictures/powerup.JPG "PowerUp") <br>
 
-At the bottom left of both screens, is the Powerup String, which is a series of 4 random characters. If at any point this string changes during the course of a game, any player may enter:
+Note that if a player tries to grab a powerup but the Powerup String has NOT changed, the player's own screen will be frozen for 10 seconds. Not good!
 
-`**`
-
-to obtain a random powerup! Note that if a player tries to grab a powerup but the Powerup String has NOT changed, the player's own screen will be frozen for 10 seconds. Not good!
-
-When you obtain a powerup, a letter either `A`, `B`, `C`, or `D` will appear on the top right of your LCD. To use a powerup, simply enter `#` then the letter of the powerup you want to use! For example, to use the power up Bug:
-
-`#B`
+When you obtain a powerup, a letter either `A`, `B`, `C`, or `D` will appear on the top right of your LCD. To use a powerup, simply enter `#` then the letter of the powerup you want to use!
 
 ### List of Power Ups
 
