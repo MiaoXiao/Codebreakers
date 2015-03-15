@@ -1,44 +1,62 @@
 # Codebreakers
 Codebreakers is a two player video game built on an embedded system.
-Two players compete by being the first to guess a randomly generated string of characters at the start of every game. However, both players will have opportunities to confuse their opponents during gameplay by using powerups.
+Two players compete by being the first to guess a randomly generated string of characters at the start of every game.
+However, both players will have opportunities to confuse their opponents during gameplay by inflicting viruses on them.
 To excel at this game, one must master concentration, memory, and dexterity!
 
-<br>![Alt text](Codebreakers/pictures/start.JPG "Start") <br>
+**Mouse over pictures for a description of it.
+
+<br>![Alt text](Codebreakers/pictures/start.JPG "The main game") <br>
 
 ## How to win
-Both players must enter a randomly generated code on their keypad in order to win. When a player enters a correct character in the right sequence, their side of the LED display will light up in order.
-
-<br> ![Alt text](Codebreakers/pictures/led.JPG "LED") <br>
-
+Both players must enter a randomly generated code on their keypad in order to win.
+When a player enters a correct character in the right sequence, their side of the LED display will light up in order.
 When all 5 LEDS light up on the corresponding player's side, that player will win the game!
-If an incorrect character in the sequence is inputted, the player's side of the LED display will reset. This way, both players will eventually be able to correctly input the entire code, given that they can remember the entire combination.
 
-## Power Ups
+<br> ![Alt text](Codebreakers/pictures/led.JPG "This player has 4 LEDs lit up on his side, which means he just needs to get the next digit right to win the game!") <br>
 
-At the bottom left of both screens, is the Powerup String, which is a series of 4 random characters. If at any point this string changes during the course of a game, any player may enter `**` to obtain a random powerup! 
+If an incorrect character in the sequence is inputted, the player's side of the LED display will reset.
+This way, both players will eventually be able to correctly input the entire code, given that they can remember the entire combination.
 
-<br> ![Alt text](Codebreakers/pictures/powerup.JPG "PowerUp") <br>
+## Viruses (Power Ups)
 
-Note that if a player tries to grab a powerup but the Powerup String has NOT changed, the player's own screen will be frozen for 10 seconds. Not good!
+At the bottom left of both screens, is the Virus String, which is a series of 4 random characters.
+If at any point this string changes during the course of a game, any player may enter `**` to obtain a random powerup!
+When you obtain a powerup, a letter either `A`, `B`, `C`, or `D` will appear on the top right of your LCD, indicating what type of Virus powerup you just obtained.
 
-When you obtain a powerup, a letter either `A`, `B`, `C`, or `D` will appear on the top right of your LCD. To use a powerup, simply enter `#` then the letter of the powerup you want to use!
+To use a Virus on your opponent, simply enter `#` then the letter of the powerup you want to use! (ex. `#A` or `#C`)
 
-### List of Power Ups
+The Virus String can change multiple times in one game.
 
-`A`: Attack. <br> Freezes your opponents keypad for 10 seconds.<br>
-![Alt text](Codebreakers/pictures/freeze.JPG "Attack") <br>
+<br> ![Alt text](Codebreakers/pictures/powerup.JPG "Closer look at the LCD screen.") <br>
 
-`B`: Bug. <br> Flips all the digits on your opponents keypad for 30 seconds. Which means when your opponent presses a digit on their keypad, it will lead to a different digit. `1` will correspond to `2`, `3` will correspond to `4`, `5` will correspond to `6`, `7` will correspond to `8`, and `9` will correspond to `0`, all vice versa. <br>
-![Alt text](Codebreakers/pictures/bug.JPG "Bug") <br>
+Note that if a player tries to grab a Virus but the Virus String has NOT changed, the player's own screen will be frozen for 10 seconds. Not good!
 
-`C`: Counter. <br> The player will be immune to any of your opponents harmful powerups for 20 seconds. Using this powerup will also remove Bug from, if necessary, but will not revert an Attack. <br>
-![Alt text](Codebreakers/pictures/immune.jpg "Counter") <br>
+### List of Viruses (Power Ups)
 
-`D`: Disrupt. <br> Will randomly change one digit in your opponents code, which means your opponent will have to find the new correct digit for their sequence. Your opponent will not be notified of this until they find out themselves!<br>
+`A`: Attack. <br> Freezes your opponents keypad for 10 seconds, which means your opponent will be unable to enter in their code, or use a powerup. Multiple Attacks used in short succession will stack!<br>
+![Alt text](Codebreakers/pictures/freeze.JPG "The string 'Freeze' represents your keypad is frozen, and you are unable to do anything.") <br>
 
-## Strategy
-Although powerups are very strong and can seriously confuse your opponent, it takes a lot of concentration to be able to get one without freezing your own screen, which will make you slower at entering the correct code.
-Likewise, completely ignoring the Powerup String and only focusing on entering the code may lead you unable to defend yourself from attack!
-Saving your power ups if you have some is also a concern, as using all of them at once might waste them if your opponent has Counter up.
+`B`: Bug. <br> Flips all the digits on your opponents keypad for 30 seconds.
+Which means when your opponent presses a digit on their keypad, it will lead to a different digit. `1` will correspond to `2`, `3` will correspond to `4`, `5` will correspond to `6`, `7` will correspond to `8`, and `9` will correspond to `0`, and vice versa. <br>
+![Alt text](Codebreakers/pictures/bug.JPG "The string 'Bug' on your LCD means that your keypad digits are now switched!") <br>
 
-<br> ![Alt text](Codebreakers/pictures/win.JPG "Win") <br>
+`C`: Counter. <br> Counter is technically not a Virus, but it is used to protect the player from any harmful Viruses that your opponent might send.
+The player will be immune to any of your opponents harmful powerups for 20 seconds.
+Using this powerup will also remove Bug from your LCD, if necessary, but will not revert an Attack that is already on your LCD, nor will it revert a harmful Disrupt if it has already occured. <br>
+![Alt text](Codebreakers/pictures/immune.jpg "The string 'IMMUNE' indicates you will not be harmed by any viruses for the duration.") <br>
+
+`D`: Disrupt. <br> Will randomly change one digit in your opponents generated code, which means your opponent will have to find the new correct digit for their sequence.
+Your opponent will not be notified of this until they find out themselves!
+<br>
+
+## Tips
+* Although Viruses are very powerful and can seriously confuse your opponent, it takes a lot of concentration to be able to obtain one without freezing your own screen, which will make you slower at entering the correct code.
+
+* Likewise, completely ignoring the Virus String and only focusing on entering the code may lead you unable to defend yourself from attack!
+
+* Try to strike a good balance between entering in the code, and checking the Virus String for power ups.
+
+* Try to have a system when guessing the code, concentrate on knowing which button presses work for which sequence, instead of guessing blindly until you finnaly input the correct code.
+
+<br> ![Alt text](Codebreakers/pictures/win.JPG "When the player has won, it will show the final correct code. The loser will also be shown their correct code.") <br>
