@@ -1,3 +1,12 @@
+/* Partner 1 Name & E-mail: Rica Feng, rfeng001@ucr.edu
+*
+* Lab Section: 23
+* Assignment: CS120B Final Project
+* Exercise Description: Codebreakers Project
+*
+* I acknowledge all content contained herein, excluding template or example
+* code, is my own original work.
+*/
 #ifndef CUSTOM_CHAR_H
 #define CUSTOM_CHAR_H
 
