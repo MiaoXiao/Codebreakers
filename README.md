@@ -34,17 +34,20 @@ Note that if a player tries to grab a Virus but the Virus String has NOT changed
 
 ### List of Viruses (Power Ups)
 
-`A`: Attack. <br> Freezes your opponents keypad for 10 seconds, which means your opponent will be unable to enter in their code, or use a powerup. Multiple Attacks used in short succession will stack!<br>
-![Alt text](Codebreakers/pictures/freeze.JPG "The string 'Freeze' represents your keypad is frozen, and you are unable to do anything.") <br>
+`A`: Attack. <br> Freezes your opponents keypad for 10 seconds, which means your opponent will be unable to enter in their code, or use a powerup. Multiple Attacks used in short succession will stack! <br>
+
+![Alt text](Codebreakers/pictures/frozen.JPG "FREEZE indicates you are unable to do anything for the duration.") <br>
 
 `B`: Bug. <br> Flips all the digits on your opponents keypad for 30 seconds.
 Which means when your opponent presses a digit on their keypad, it will lead to a different digit. `1` will correspond to `2`, `3` will correspond to `4`, `5` will correspond to `6`, `7` will correspond to `8`, and `9` will correspond to `0`, and vice versa. <br>
-![Alt text](Codebreakers/pictures/bug.JPG "The string 'Bug' on your LCD means that your keypad digits are now switched!") <br>
+
+![Alt text](Codebreakers/pictures/bug.JPG "Bug indicates that your keypad digits are now switched!") <br>
 
 `C`: Counter. <br> Counter is technically not a Virus, but it is used to protect the player from any harmful Viruses that your opponent might send.
 The player will be immune to any of your opponents harmful powerups for 20 seconds.
 Using this powerup will also remove Bug from your LCD, if necessary, but will not revert an Attack that is already on your LCD, nor will it revert a harmful Disrupt if it has already occured. <br>
-![Alt text](Codebreakers/pictures/immune.jpg "The string 'IMMUNE' indicates you will not be harmed by any viruses for the duration.") <br>
+
+![Alt text](Codebreakers/pictures/immune.JPG "IMMUNE indicates you will not be harmed by any viruses for the duration.") <br>
 
 `D`: Disrupt. <br> Will randomly change one digit in your opponents generated code, which means your opponent will have to find the new correct digit for their sequence.
 Your opponent will not be notified of this until they find out themselves!
